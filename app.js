@@ -15,15 +15,35 @@ const studentGrades = document.querySelectorAll(".grades");
 const alertBox = document.getElementById("alert-box");
 const resetBtn = document.querySelector('#reset');
 const deleteAll = document.getElementById("delete-all")
-console.log(schoolInputs[2]);
-let clsNumbers = [];
-const alphabet = "ABCDEFGHIJK";
-let letters = [];
-let alertDiv;
+// fonksiyonları yukarıda topladım 
 
+
+// localstorage da kayıt varsa içinden sınıf sayılarını çeker ve bunlar ile select içne options koyar
+function fillSelect() {
+  classNum.innerHTML = "";
+  classNum.innerHTML = `<option selected disabled>Select Grade</option>`;
+  Object.keys(data).forEach((item) => {
+    classNum.innerHTML += `<option value="${item}">${item}</option>`;
+  });
+}
+//! tablonun üst kısmında yapılan işleme göre alarm div oluşturuyor. str=metin kısmı/ alertType= "warning", "success" bootstrap classları/ strongStr= Dikkat edilmesini istediğiniz metin, başta çıkıyor. burada default değerler de koydum. strongStr opsiyonel.
+function showAlert(str="Error", alertType="warning", strongStr = "") {
+  let alertDiv = `<div class="alert alert-${alertType} alert-dismissible fade show" role="alert">
+ <strong>${strongStr}</strong> ${str}
+ <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>`;
+//* burada tablonun üst kısmında bulunan boş div içine alert oluşturuyoruz. faydası üst üste oluşan alertler aynı yerde tek çıkıyor. alert içinde kapatma butonu da var */
+  alertBox.innerHTML = alertDiv;
+}
+//okul sınıf numaralarını oluştururken kullandığımız boş değişkenler
+let clsNumbers = [];
+let letters = [];
+
+// burada eğer localStorage içinde daha önce kayıtlarımız varsa çekiyoruz. yoksa boş bir obje oluşturuyoruz
 let data = JSON.parse(localStorage.getItem("school")) || {};
+// datayı çektikten sonra sınıf listesini doldurduk
 fillSelect();
-console.log(Object.keys(data));
+//* main kısmındaki başlığa ternary if ile localstorage dan varsa okul ismini çektik, yoksa "Enter School Information" yazdırdık  */ 
 schoolNameHeader.innerHTML = localStorage.getItem("schoolName")
   ? `${localStorage.getItem(
       "schoolName"
@@ -32,33 +52,46 @@ schoolNameHeader.innerHTML = localStorage.getItem("schoolName")
     )}</span>`
   : "Enter School Information";
 
-schoolFormSubmit.addEventListener("click", (e) => {
-  // e.preventDefault();
-  console.log();
+  //** bu kısım header kısmında ki form. */
+schoolFormSubmit.addEventListener("click", () => {
+  // preventDefault iptal sebebim bu kısım doldurulup onaylandıktan sonra bir daha ihtiyaç duymamam ve sayfaya bir kaç komut eklemek yerine yenilenmesi daha kolay :)
+  // e.preventDefault(); 
+
+  //aşağıda bulunan okul objemize okul ismi ve türünü aktarıyoruz.
   school.schoolName = schoolInputs[0].value;
-  school.type = schoolInputs[1].value;
-  // let {schoolName, schoolType}= school
-  //  clsNumbers= Array.from(Array(+schoolInputs[2].value+1).keys()).splice(1);  similar with bottom
+  school.schoolType = schoolInputs[1].value;
+  
+  //**  burada sınıfların başlangıç ve bitiş array'ini oluşturuyoruz
+  //! özetle [...Array(5).keys()].splice(1) == [1,2,3,4]
+  /*!        5 elemanlı bir array oluşturup bunun "keys()" index'leriyle başka bir 
+  array yapıyoruz. index 0 dan başladığı için yapmak istediğimiz diziden bir fazlasını
+   yapıp ilk elemanı splice ile siliyoruz.*/
   clsNumbers = [...Array(+schoolInputs[3].value + 1).keys()].splice(schoolInputs[2].value);
-  console.log(clsNumbers);
-  console.log(schoolInputs[3].value);
+  //! letters ve clsNumbers globalde oluşturmamızın sebebi daha sonra school metodunda kullanacak olmamız
+  // burada formda belirtilen harf kadar bir array dizisi oluşturduk
+  const alphabet = "ABCDEFGHIJK";
   letters = alphabet.slice(0, schoolInputs[4].value).split("");
-  localStorage.setItem("school", JSON.stringify(school.clss()));
+  //sınıf kademeleri select'ini doldurduk. 
+  fillSelect();
+/* burada localStorage'da "school" key ile, school.makeClasses metodunda oluşturduğumuz
+objemizi json metnine dönüştürüp kaydettik
+ayrıca okul ismi ve tipini de kaydettik*/
+  localStorage.setItem("school", JSON.stringify(school.makeClasses()));
   localStorage.setItem("schoolName", school.schoolName);
-  localStorage.setItem("schoolType", school.type);
+  localStorage.setItem("schoolType", school.schoolType);
+
+  // kayıt işleminden sonra başlıklarımızı yeniledik
   schoolNameHeader.innerHTML = `${localStorage.getItem(
     "schoolName"
   )}<br><span class="badge rounded-pill bg-info fs-4">${localStorage.getItem(
     "schoolType"
   )}</span>`;
-  fillSelect();
+  // son halini local storage dan çekerek data değişkenimizi yeniledik
   data = JSON.parse(localStorage.getItem("school"))
-  console.log(school.classGroups());
-  console.log(school.classes());
-
-  console.log();
 });
-console.log(localStorage.getItem("schoolName"));
+/** burada okul genel bilgilerinin local'de kayıtlı olup olmadığını okul ismiyle 
+  kontrol ediyoruz. eğer yoksa html de tanımladığımız formu gizleyen "d-none" clasını
+   kaldırıyoruz ve arama/ekleme butonlarını deaktif yapıyoruz */
 if (!localStorage.getItem("schoolName")) {
   schoolForm.classList.remove("d-none"); //alta al
   searchBtn.disabled = true;
@@ -165,21 +198,14 @@ studentForm.addEventListener("click", (e) => {
     }
 });
 
-function fillSelect() {
-  classNum.innerHTML = "";
-  classNum.innerHTML = `<option selected disabled>Select Grade</option>`;
-  Object.keys(data).forEach((item) => {
-    classNum.innerHTML += `<option value="${item}">${item}</option>`;
-  });
-}
 
 const school = {
   schoolName: "School Name",
   schoolType: "School Type",
 
-  clss: function () {
+  makeClasses: function () {
     let obj = {};
-    let clss = {};
+    let makeClasses = {};
     let d = clsNumbers[0];
 
     let list = this.findClassesWithLetters(d);
@@ -188,13 +214,13 @@ const school = {
         obj[j] = {};
       }
       d++;
-      clss[i] = obj;
+      makeClasses[i] = obj;
       obj = {};
 
       list = this.findClassesWithLetters(d);
     }
 
-    return clss;
+    return makeClasses;
   },
   classGroups: () => {
     // let clsWithLttrs = Object.keys(school.clsStudents.getStudents()[1]);
@@ -231,7 +257,7 @@ const school = {
   clsStudents: {
     addStnt: function (clsNum, clsName, no, ad, ...notlar) {
       // nulish operator
-      let data = JSON.parse(localStorage.getItem("school")); //?? school.clss();
+      let data = JSON.parse(localStorage.getItem("school")); //?? school.makeClasses();
       // console.log(data);
 
       Object.keys(data).forEach((item) => {
@@ -300,9 +326,9 @@ console.log(school.classes());
 // console.log(Object.keys(school.clsStudents.getStudents()[1]) );
 
 // console.log(school.clsStudents.addStnt("ali", 1, "1-A"));
-// school.clss()[1]["1-A"] = ["ali"];
+// school.makeClasses()[1]["1-A"] = ["ali"];
 
-// console.log(school.clss());
+// console.log(school.makeClasses());
 
 // let sc = {
 //   1: {
@@ -314,10 +340,3 @@ console.log(school.classes());
 
 // console.log(sc[1]["1-A"][101]);
 
-function showAlert(str, alertType, strongStr = "") {
-  let alertDiv = `<div class="alert alert-${alertType} alert-dismissible fade show" role="alert">
- <strong>${strongStr}</strong> ${str}
- <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-</div>`;
-  alertBox.innerHTML = alertDiv;
-}
