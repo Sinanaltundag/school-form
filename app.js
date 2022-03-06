@@ -1,6 +1,6 @@
 const schoolFormSubmit = document.querySelector(".btn-outline-primary");
-const schoolInputs = document.querySelectorAll("header input, header select");
-const schoolForm = document.querySelector("header");
+const schoolInputs = document.querySelectorAll(".modal input, .modal select");
+// const schoolForm = document.querySelector("header");
 const schoolNameHeader = document.querySelector("main h1");
 const classNum = document.getElementById("class-num");
 const className = document.getElementById("class-name");
@@ -15,6 +15,14 @@ const studentGrades = document.querySelectorAll(".grades");
 const alertBox = document.getElementById("alert-box");
 const resetBtn = document.querySelector('#reset');
 const deleteAll = document.getElementById("delete-all")
+const schoolForm = document.getElementById('staticBackdrop')
+const modalLauncher = document.getElementById("modal-launcher")
+
+
+/**  başlangıçta modal açılması için verilen bootstrap5 destekli kodlar fakat problem çıkarıyor
+var myModal = new bootstrap.Modal(schoolForm, {})
+schoolForm.show()
+*/
 // fonksiyonları yukarıda topladım 
 
 
@@ -31,9 +39,9 @@ function showAlert(str="Error", alertType="warning", strongStr = "") {
   let alertDiv = `<div class="alert alert-${alertType} alert-dismissible fade show" role="alert">
  <strong>${strongStr}</strong> ${str}
  <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-</div>`;
-//* burada tablonun üst kısmında bulunan boş div içine alert oluşturuyoruz. faydası üst üste oluşan alertler aynı yerde tek çıkıyor. alert içinde kapatma butonu da var */
-  alertBox.innerHTML = alertDiv;
+ </div>`;
+ //* burada tablonun üst kısmında bulunan boş div içine alert oluşturuyoruz. faydası üst üste oluşan alertler aynı yerde tek çıkıyor. alert içinde kapatma butonu da var */
+ alertBox.innerHTML = alertDiv;
 }
 //okul sınıf numaralarını oluştururken kullandığımız boş değişkenler
 let clsNumbers = [];
@@ -45,14 +53,28 @@ let data = JSON.parse(localStorage.getItem("school")) || {};
 fillSelect();
 //* main kısmındaki başlığa ternary if ile localstorage dan varsa okul ismini çektik, yoksa "Enter School Information" yazdırdık  */ 
 schoolNameHeader.innerHTML = localStorage.getItem("schoolName")
-  ? `${localStorage.getItem(
-      "schoolName"
-    )}<br><span class="badge rounded-pill bg-info fs-4">${localStorage.getItem(
-      "schoolType"
+? `${localStorage.getItem(
+  "schoolName"
+  )}<br><span class="badge rounded-pill bg-info fs-4">${localStorage.getItem(
+    "schoolType"
     )}</span>`
-  : "Enter School Information";
-
-  //** bu kısım header kısmında ki form. */
+    : "Enter School Information";
+    
+    /** burada okul genel bilgilerinin local'de kayıtlı olup olmadığını okul ismiyle 
+      kontrol ediyoruz. eğer yoksa modal açma butonunu click'ledik. daha stabil yol bulamadım.
+       arama/ekleme butonlarını deaktif yapıyoruz */
+    if (!localStorage.getItem("schoolName")) {
+      window.onload = () => {
+        modalLauncher.click()
+      }
+      //modal açıldığında ilk inputu aktif etme
+      schoolForm.addEventListener('shown.bs.modal', function () {
+        schoolInputs[0].focus()
+      })
+      searchBtn.disabled = true;
+      addStudent.disabled = true;
+    }
+  //** bu kısım modal kısmında ki form. */
 schoolFormSubmit.addEventListener("click", () => {
   // preventDefault iptal sebebim bu kısım doldurulup onaylandıktan sonra bir daha ihtiyaç duymamam ve sayfaya bir kaç komut eklemek yerine yenilenmesi daha kolay :)
   // e.preventDefault(); 
@@ -89,42 +111,38 @@ ayrıca okul ismi ve tipini de kaydettik*/
   // son halini local storage dan çekerek data değişkenimizi yeniledik
   data = JSON.parse(localStorage.getItem("school"))
 });
-/** burada okul genel bilgilerinin local'de kayıtlı olup olmadığını okul ismiyle 
-  kontrol ediyoruz. eğer yoksa html de tanımladığımız formu gizleyen "d-none" clasını
-   kaldırıyoruz ve arama/ekleme butonlarını deaktif yapıyoruz */
-if (!localStorage.getItem("schoolName")) {
-  schoolForm.classList.remove("d-none"); //alta al
-  searchBtn.disabled = true;
-  addStudent.disabled = true;
-}
+// sınıf seviyesi seçilince ilgili sınıflar select menüye ekleniyor
 studentForm.addEventListener("change", (e) => {
-  console.log(e);
-
   if (e.target.id == "class-num") {
     className.innerHTML = "";
-    Object.keys(school.clsStudents.getStudents()[e.target.value]).forEach(
+    /** data ile classnumber value ile birleştirip
+     *  key'leri yani sınıf adlarını foreach ile  çekerek class name 
+     * selectine options olarak ekledik. kısaca "data[x].keys().foreach gibi */  
+    Object.keys(data[e.target.value]).forEach(
       (item) => {
         className.innerHTML += `<option value="${item}">${item}</option>`;
       }
     );
   }
-  if (e.target.id == "fullname") {
-    addStudent.disabled = false;
-  }
 });
-
+//* öğrenci formu click eventleri */
 studentForm.addEventListener("click", (e) => {
+  // öğrenci arama listeleme
   if (e.target == searchBtn) {
+    // sayfa yenilememesi için
     e.preventDefault();
+    //sınıf adı boşsa alert ver
     if (!className.value) {
       return showAlert("Select Class Name", "alert alert-warning");
     }
-    if (studentNo.value) {
+// boşluklar doluysa öğrenciyi çek ve 
+    if (studentNo.value&&classNum.value) {
       let studentList = school.clsStudents.getStudents(
         classNum.value,
         className.value,
         studentNo.value
       );
+      //gelen verileri tabloya yazdır
       if (studentList) {
         let tableRow = `<tr>
     <th scope="row">${className.value}</th>
@@ -134,21 +152,22 @@ studentForm.addEventListener("click", (e) => {
   </tr>`;
         tableBody.innerHTML = "";
         tableBody.innerHTML += tableRow;
-        console.log(studentList.info[0]);
-        console.log(studentList.info[1].toString());
       } else {
+        //gelen veri yoksa alert ver
         showAlert(
           "There is not a student with search arguments",
           "alert alert-warning"
         );
       }
+      // öğrenci no yosa sınıf listesini getirir
     } else {
       let studentList = school.clsStudents.getStudents(
         classNum.value,
-        className.value,
-        studentNo.value
+        className.value
       );
+      //tabloyu boşalt
       tableBody.innerHTML = "";
+      // getstudents ile gelen listeden restructure yöntemiyle gelen verileri tabloya foreach ile yazdırıyoruz
       Object.keys(studentList).forEach((studentNo) => {
         let {
           [studentNo]: {
@@ -159,24 +178,24 @@ studentForm.addEventListener("click", (e) => {
     <th scope="row">${className.value}</th>
     <td>${studentNo}</td>
     <td>${fullname}</td>
-    <td>${grades}<button type="button" class="btn-close float-end" data-bs-dismiss="alert" aria-label="Close"></button></td>
+    <td>${grades}<i class="bi bi-person-x fs-5 float-end btn"></i></td>
   </tr>`;
         tableBody.innerHTML += tableRow;
-        console.log(studentNo,fullname, grades);
       });
     }
   }
   if (e.target == addStudent) {
     e.preventDefault();
-    school.clsStudents.addStnt(
+   let result = school.clsStudents.addStnt(
       classNum.value,
       className.value,
       studentNo.value,
       studentName.value,
       [...studentGrades].map((x) => x.value)
     );
-    showAlert(`${studentNo.value} : ${studentName.value}'s record has been added.`,"success" )
-    console.log([...studentGrades].map((x) => x.value));
+    console.log(result);
+    (result)?showAlert(`${studentNo.value} : ${studentName.value}'s record has been added.`,"success" ):showAlert("Error : Please control student information", "danger")
+    // console.log([...studentGrades].map((x) => x.value));
   }
   if (e.target== resetBtn ) {
     className.innerHTML=""
@@ -185,7 +204,7 @@ studentForm.addEventListener("click", (e) => {
     
     school.clsStudents.deleteAll()
   }
-  if (e.target.classList.contains("btn-close")) {
+  if (e.target.classList.contains("bi-person-x")) {
     if (confirm("Are you sure you want to delete student entry!")) {
       
       let [clsName, no, studentName]= [...e.target.parentElement.parentElement.children].map((x)=>x.innerHTML); 
@@ -255,35 +274,49 @@ const school = {
     return classList;
   },
   clsStudents: {
-    addStnt: function (clsNum, clsName, no, ad, ...notlar) {
-      // nulish operator
-      let data = JSON.parse(localStorage.getItem("school")); //?? school.makeClasses();
-      // console.log(data);
-
-      Object.keys(data).forEach((item) => {
-        Object.keys(data[item]).forEach((innerItem) => {
-          Object.keys(data[item][innerItem]).forEach((inner2Item) => {
-            if (inner2Item == no) {
-              if (
-                confirm(
-                  `At ${innerItem} class there is same ${inner2Item} number. Do you want to update?`
-                )
-              ) {
-                data[clsNum][clsName][no] = { info: [ad, notlar] };
-                localStorage.setItem("school", JSON.stringify(data));
-                return data;
+    addStnt: function (clsNum, clsName, no, studentName, ...grades) {
+      if (clsNum&& clsName&& no&& studentName) {
+        
+        // nulish operator
+        let data = JSON.parse(localStorage.getItem("school")); //?? school.makeClasses();
+        // console.log(data);
+  let res;
+       Object.keys(data).forEach((dtClsNum) => {
+          Object.keys(data[dtClsNum]).forEach((dtClsName) => {
+            Object.keys(data[dtClsNum][dtClsName]).forEach((dtNo) => {
+              if (dtNo == no) {
+                if (
+                  confirm(
+                    `At ${dtClsName} class there is same ${dtNo} number. Do you want to update student name and grades?`
+                  )
+                ) {
+                  data[dtClsNum][dtClsName][dtNo] = { info: [studentName, grades] };
+                  localStorage.setItem("school", JSON.stringify(data));
+                  res= "success";
+                } else {
+                  res= "cancel"
+                }
               }
-            }
+            });
           });
         });
-      });
-      data[clsNum][clsName][no] = { info: [ad, notlar] };
+        if(!res){
+          data[clsNum][clsName][no] = { info: [studentName, grades] };
+          localStorage.setItem("school", JSON.stringify(data));
+          return "success"
+        }
+      } else {
+       return null
+      }
+        
+      // } catch (error) {
+      //   if(error) 
+      // }
       // let info = new Map();
       // s[2]["2-A"] = info.set(11, 222);
       // s[clsNum][clsName] = info.set(no, [ad, notlar]);
       // console.log(data);
-      localStorage.setItem("school", JSON.stringify(data));
-      return data;
+      // return data;
     },
     getStudents: function (clsNum, clsName, no) {
       let data = JSON.parse(localStorage.getItem("school"));
