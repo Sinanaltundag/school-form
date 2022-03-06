@@ -316,7 +316,7 @@ verileriyle sınıf objemizi oluşturan metod. okul formunu submit ettiğimizde 
       obj = {};
 
       classNames = this.findClassesWithLetters(d);
-      console.log(classNames);
+
     }
 
     return makeClasses;
@@ -332,7 +332,7 @@ verileriyle sınıf objemizi oluşturan metod. okul formunu submit ettiğimizde 
         clsWithLttrs.set(temp, item);
       }
     });
-    console.log(clsWithLttrs);
+
     return clsWithLttrs;
   },
   findClassesWithLetters: function (number) {
@@ -341,12 +341,12 @@ metod parametresinden aldığımız sınıf numarası ile filtreliyoruz*/
     let filteredClasses = [...this.classGroups().entries()].filter(
       (item) => item[1] === number
     );
-    console.log(filteredClasses);
+
     // gereksiz boşlukları kaldırdık
     filteredClasses.forEach((e) => {
       e.splice(1, 1);
     });
-    console.log(filteredClasses);
+
     //içiçe(nested) arrayi düz array yaptık
     let flatClassList = filteredClasses.flat();
     return flatClassList;
@@ -371,7 +371,7 @@ metod parametresinden aldığımız sınıf numarası ile filtreliyoruz*/
       if (clsNum && clsName && no && studentName) {
         // burada nullish kullanmıştım localde kayıt yoksa diye fakat gerek kalmadı
         let data = JSON.parse(localStorage.getItem("school")); //?? school.makeClasses();
-        // console.log(data);
+
         let res;
         // kaydedilecek öğrenci no kayıtlarda var mı?
         Object.keys(data).forEach((dtClsNum) => {
@@ -425,7 +425,7 @@ metod parametresinden aldığımız sınıf numarası ile filtreliyoruz*/
       let data = JSON.parse(localStorage.getItem("school"));
       delete data[clsNum][clsName][no];
       localStorage.setItem("school", JSON.stringify(data));
-      console.log(data);
+
     },
     //* tüm öğrenci ve okul kayıtlarını silme
     deleteAll: () => {
