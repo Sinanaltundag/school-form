@@ -59,18 +59,16 @@ let letters = [];
 
 // datayı çektikten sonra sınıf listesini doldurduk
 fillSelect();
-//* main kısmındaki başlığa ternary if ile localstorage dan varsa okul ismini çektik, yoksa "Enter School Information" yazdırdık  */
-schoolNameHeader.innerHTML = localStorage.getItem("schoolName")
-  ? `${localStorage.getItem(
-      "schoolName"
-    )}<br><span class="badge rounded-pill bg-info fs-4">${localStorage.getItem(
-      "schoolType"
-    )}</span>`
-  : "Enter School Information";
 
 /** burada okul genel bilgilerinin local'de kayıtlı olup olmadığını okul ismiyle 
-      kontrol ediyoruz. eğer yoksa  modal açma linki oluşturup click'ledik. daha stabil yol bulamadım. :) */
-if (!localStorage.getItem("schoolName")) {
+ kontrol ediyoruz. varsa okul başlığını değiştirdik, eğer yoksa  modal açma linki oluşturup click'ledik.  */
+if (localStorage.getItem("schoolName")) {
+  schoolNameHeader.innerHTML = `${localStorage.getItem(
+    "schoolName"
+  )}<br><span class="badge rounded-pill bg-info fs-4">${localStorage.getItem(
+    "schoolType"
+  )}</span>`;
+} else {
   window.onload = () => {
     const modalLaunch = document.createElement("a");
     modalLaunch.setAttribute("data-bs-toggle", "modal");
@@ -78,6 +76,10 @@ if (!localStorage.getItem("schoolName")) {
     document.body.appendChild(modalLaunch);
     modalLaunch.click();
   };
+  /* 
+if (!localStorage.getItem("schoolName")) {
+  
+  }; */
   //modal açıldığında ilk inputu aktif etme
   schoolForm.addEventListener("shown.bs.modal", function () {
     schoolInputs[0].focus();
@@ -134,6 +136,7 @@ studentForm.addEventListener("change", (e) => {
     /** data ile classnumber value ile birleştirip
      *  key'leri yani sınıf adlarını foreach ile  çekerek class name
      * selectine options olarak ekledik. kısaca "data[x].keys().foreach gibi */
+    data = JSON.parse(localStorage.getItem("school"));
     Object.keys(data[e.target.value]).forEach((item) => {
       className.innerHTML += `<option value="${item}">${item}</option>`;
     });
@@ -201,7 +204,7 @@ studentForm.addEventListener("click", (e) => {
   //* öğrenci ekleme
   if (e.target.id == "register") {
     e.preventDefault();
-    // addStudent metodumuza input value'ları gönderdik
+    // addStudent metodumuza input value'ları gönderdik ve result ile return ettiğimiz sonucu aldık
     let result = school.clsStudents.addStnt(
       classNum.value,
       className.value,
@@ -212,12 +215,57 @@ studentForm.addEventListener("click", (e) => {
       [...studentGrades].map((x) => x.value)
     );
     //metodumuz kayıt başarılı ile bir metin döndürüyor. sonuca göre alert veriyoruz.
-    result
-      ? showAlert(
-          `${studentNo.value} : ${studentName.value}'s record has been added.`,
-          "success"
-        )
-      : showAlert("Error : Please control student information", "danger");
+    if (result) {
+      let tableRow =""
+      switch (result[0]) {
+        case 1:
+          showAlert(
+            result[1], "warning",
+          );
+          break;
+        case 2:
+          showAlert(
+            `${studentNo.value} : ${studentName.value}'s record has been added.`,
+            "success",
+            result[1]
+          );
+          tableRow = `<tr>
+          <th scope="row">${className.value}</th>
+          <td >${studentNo.value}</td>
+          <td class="text-capitalize">${studentName.value}</td>
+          <td>${[...studentGrades].map(
+            (x) => x.value
+          )}<i class="bi bi-person-x fs-5 py-0 float-end btn"></i></td>
+        </tr>`;
+            tableBody.innerHTML += tableRow;
+          break;
+        case 3:
+          showAlert(
+            result[1], "warning",
+          );
+          break;
+        case 4:
+          showAlert(
+            `${studentNo.value} : ${studentName.value}'s record has been added.`,
+            "success",
+            result[1]
+          );
+          tableRow = `<tr>
+          <th scope="row">${className.value}</th>
+          <td >${studentNo.value}</td>
+          <td class="text-capitalize">${studentName.value}</td>
+          <td>${[...studentGrades].map(
+            (x) => x.value
+          )}<i class="bi bi-person-x fs-5 py-0 float-end btn"></i></td>
+        </tr>`;
+            tableBody.innerHTML += tableRow;
+          break;
+      }
+      
+     
+      return;
+    }
+    showAlert("Error : Please control student information", "danger", result);
   }
   if (e.target == resetBtn) {
     className.innerHTML = "";
@@ -229,6 +277,7 @@ studentForm.addEventListener("click", (e) => {
   ) {
     e.preventDefault();
     school.clsStudents.deleteAll();
+    // burada tekrar okul kayıt penceresini açıyoruz
     const modalLaunch = document.createElement("a");
     modalLaunch.setAttribute("data-bs-toggle", "modal");
     modalLaunch.setAttribute("data-bs-target", "#staticBackdrop");
@@ -265,25 +314,28 @@ studentForm.addEventListener("click", (e) => {
   }
   // yedeklediğimiz json dosyasından data ve localstorage'a geri yüklüyor
   if (e.target.id == "restore") {
+    e.preventDefault();
     const getFile = document.createElement("input");
-    getFile.setAttribute("type","file")
-    getFile.setAttribute("id","selectFiles")
-    getFile.click()
-    getFile.addEventListener("change",()=>{
-      var files = getFile.files;
+    getFile.setAttribute("type", "file");
+    getFile.setAttribute("id", "selectFiles");
+    getFile.click();
+    console.log(getFile);
+    getFile.addEventListener("change", () => {
+      let files = getFile.files;
       if (files.length <= 0) {
-      return false;
+        return false;
       }
       let fileReader = new FileReader();
-      fileReader.onload = function(e) { 
-      var result = JSON.parse(e.target.result);
-       data = JSON.stringify(result);
-        localStorage.setItem("school", data)
-      }
+      fileReader.onload = function (e) {
+        var result = JSON.parse(e.target.result);
+        console.log(result);
+        data = JSON.stringify(result);
+        localStorage.setItem("school", data);
+      };
       fileReader.readAsText(files.item(0));
-    })
+    });
 
-   /* !! html localde ise çalışır
+    /* !! html localde ise çalışır
      fetch("./yedek.json")
       .then((response) => {
         return response.json();
@@ -316,7 +368,6 @@ verileriyle sınıf objemizi oluşturan metod. okul formunu submit ettiğimizde 
       obj = {};
 
       classNames = this.findClassesWithLetters(d);
-
     }
 
     return makeClasses;
@@ -366,41 +417,52 @@ metod parametresinden aldığımız sınıf numarası ile filtreliyoruz*/
   //! öğrenci işleri...
   clsStudents: {
     //öğrenci ekleme
-    addStnt: function (clsNum, clsName, no, studentName, ...grades) {
+    addStnt: function (clsNum, clsName, no, studentName, grades) {
       // not dışındaki veriler gelmişse
       if (clsNum && clsName && no && studentName) {
-        // burada nullish kullanmıştım localde kayıt yoksa diye fakat gerek kalmadı
-        let data = JSON.parse(localStorage.getItem("school")); //?? school.makeClasses();
+        function checkGrade(grade) {
+          // console.log(grade);
+          return grade > 100;
+        }
+        if (grades.some(checkGrade)) {
+          return [1,"Grades must be between 0-100"];
+        } else {
+          // burada nullish kullanmıştım localde kayıt yoksa diye fakat gerek kalmadı
+          let data = JSON.parse(localStorage.getItem("school")); //?? school.makeClasses();
 
-        let res;
-        // kaydedilecek öğrenci no kayıtlarda var mı?
-        Object.keys(data).forEach((dtClsNum) => {
-          Object.keys(data[dtClsNum]).forEach((dtClsName) => {
-            Object.keys(data[dtClsNum][dtClsName]).forEach((dtNo) => {
-              if (dtNo == no) {
-                if (
-                  confirm(
-                    `At ${dtClsName} class there is same ${dtNo} number. Do you want to update student name and grades?`
-                  )
-                ) {
-                  data[dtClsNum][dtClsName][dtNo] = {
-                    info: [studentName, grades],
-                  };
-                  localStorage.setItem("school", JSON.stringify(data));
-                  //nested yapıda return yerine kullanılabilir
-                  res = "success";
-                } else {
-                  res = "cancel";
+          let res;
+          // kaydedilecek öğrenci no kayıtlarda var mı?
+          Object.keys(data).forEach((dtClsNum) => {
+            Object.keys(data[dtClsNum]).forEach((dtClsName) => {
+              Object.keys(data[dtClsNum][dtClsName]).forEach((dtNo) => {
+                if (dtNo == no) {
+                  if (
+                    confirm(
+                      `At ${dtClsName} class there is same ${dtNo} number. Do you want to update student name and grades?`
+                    )
+                  ) {
+                    data[dtClsNum][dtClsName][dtNo] = {
+                      info: [studentName, grades],
+                    };
+                    localStorage.setItem("school", JSON.stringify(data));
+                    //nested yapıda return yerine kullanılabilir
+                    res = [2,"Record change success"];
+                  } else {
+                    res = [3,"Record change cancel"];
+                  }
                 }
-              }
+              });
             });
           });
-        });
-        //yukarıda kullandığım return benzeri yapıyla kayıt işleminin tekrarlanmasını engelledim
-        if (!res) {
-          data[clsNum][clsName][no] = { info: [studentName, grades] };
-          localStorage.setItem("school", JSON.stringify(data));
-          return "success";
+
+          //yukarıda kullandığım return benzeri yapıyla kayıt işleminin tekrarlanmasını engelledim
+          if (res) {
+            return res;
+          } else {
+            data[clsNum][clsName][no] = { info: [studentName, grades] };
+            localStorage.setItem("school", JSON.stringify(data));
+            return [4,"New student added"];
+          }
         }
       } else {
         // hiç bir işlem yapılamadıysa hata vermesi için
@@ -425,7 +487,6 @@ metod parametresinden aldığımız sınıf numarası ile filtreliyoruz*/
       let data = JSON.parse(localStorage.getItem("school"));
       delete data[clsNum][clsName][no];
       localStorage.setItem("school", JSON.stringify(data));
-
     },
     //* tüm öğrenci ve okul kayıtlarını silme
     deleteAll: () => {
