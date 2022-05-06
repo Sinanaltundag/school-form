@@ -5,14 +5,12 @@ const classNum = document.getElementById("class-num");
 const className = document.getElementById("class-name");
 const studentNo = document.getElementById("student-no");
 const studentName = document.getElementById("fullname");
-const examResults = document.querySelectorAll(".input-group input");
+const studentGrades = document.querySelectorAll(".grades");
 const studentForm = document.querySelector("main");
 const tableBody = document.querySelector("tbody");
-const studentGrades = document.querySelectorAll(".grades");
 const alertBox = document.getElementById("alert-box");
 const resetBtn = document.querySelector("#reset");
 const schoolForm = document.getElementById("staticBackdrop");
-const modalLauncher = document.getElementById("modal-launcher");
 
 /**  başlangıçta modal açılması için verilen bootstrap5 destekli kodlar fakat problem çıkarıyor
 var myModal = new bootstrap.Modal(schoolForm, {})
@@ -89,7 +87,8 @@ if (!localStorage.getItem("schoolName")) {
 schoolFormSubmit.addEventListener("click", (e) => {
   // preventDefault iptal sebebim bu kısım doldurulup onaylandıktan sonra bir daha ihtiyaç duymamam ve sayfaya bir kaç komut eklemek yerine yenilenmesi daha kolay :)
   // e.preventDefault();
-  if (schoolInputs[3].value > schoolInputs[2].value) {
+  console.log(schoolInputs[3].value, schoolInputs[2].value,schoolInputs[0].value,schoolInputs[1].value );
+  if (+schoolInputs[3].value > +schoolInputs[2].value) {
     //aşağıda bulunan okul objemize okul ismi ve türünü aktarıyoruz.
     school.schoolName = schoolInputs[0].value;
     school.schoolType = schoolInputs[1].value;
@@ -150,7 +149,7 @@ studentForm.addEventListener("click", (e) => {
     e.preventDefault();
     //sınıf adı boşsa alert ver
     if (!className.value) {
-      return showAlert("Select Class Name", "alert alert-warning");
+      return showAlert("Select Class Name", "warning");
     }
     // boşluklar doluysa öğrenciyi çek ve
     if (studentNo.value && classNum.value) {
@@ -349,8 +348,8 @@ studentForm.addEventListener("click", (e) => {
 });
 //! tüm işler için kullandığımız objemiz
 const school = {
-  schoolName: "School Name",
-  schoolType: "School Type",
+  schoolName: "",
+  schoolType: "",
   /*okul bilgileri formundan aldığımız sınıf sayısı ve şube sayısı 
 verileriyle sınıf objemizi oluşturan metod. okul formunu submit ettiğimizde çağırmıştık*/
   makeClasses: function () {
